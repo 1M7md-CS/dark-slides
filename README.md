@@ -1,4 +1,4 @@
-# convert-to-pdf
+# Dark Slides
 
 Batch convert PowerPoint files (`.ppt`, `.pptx`) to PDF using Microsoft PowerPoint COM automation, then generate dark-mode versions of each PDF.
 
