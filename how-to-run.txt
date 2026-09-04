@@ -1,5 +1,21 @@
------------- REPLACE THE PATH ---------------
+How to Run
 
-PUT THE .ppt AND .pptx FILES IN THE ROOT DIRECTORY
+1. Place all .ppt and .pptx files in the root directory.
 
-powershell -ExecutionPolicy Bypass -File "C:\Users\1M7md\Downloads\OneDrive_1_9-4-2026\ppt-to-pdf.ps1"
+2. Open PowerShell and navigate to the folder containing ppt-to-pdf.ps1:
+
+cd "C:\Path\To\convert-to-pdf"
+
+3. Run:
+
+powershell -ExecutionPolicy Bypass -File ".\ppt-to-pdf.ps1"
+
+PowerShell 7:
+
+pwsh -ExecutionPolicy Bypass -File ".\ppt-to-pdf.ps1"
+
+Output:
+
+pdf\ Converted PDFs
+pdf-dark\ Dark-mode PDFs
+ppt\ Original PowerPoint files
