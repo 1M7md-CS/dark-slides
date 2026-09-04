@@ -1,3 +1,5 @@
 ------------ REPLACE THE PATH ---------------
 
+PUT THE .ppt AND .pptx FILES IN THE ROOT DIRECTORY
+
 powershell -ExecutionPolicy Bypass -File "C:\Users\1M7md\Downloads\OneDrive_1_9-4-2026\ppt-to-pdf.ps1"
