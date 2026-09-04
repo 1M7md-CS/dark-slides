@@ -1,54 +1,111 @@
 $ErrorActionPreference = "Stop"
-$folder = $PSScriptRoot
-$pdfDir = Join-Path $folder "pdf"
-$pptDir = Join-Path $folder "ppt"
-$darkDir = Join-Path $folder "pdf-dark"
-$convertScript = Join-Path $folder "convert-dark.js"
 
-New-Item -ItemType Directory -Path $pdfDir -Force | Out-Null
-New-Item -ItemType Directory -Path $pptDir -Force | Out-Null
-New-Item -ItemType Directory -Path $darkDir -Force | Out-Null
+$root = $PSScriptRoot
+$pdfDir = Join-Path $root "pdf"
+$pptDir = Join-Path $root "ppt"
+$darkDir = Join-Path $root "pdf-dark"
+$convertScript = Join-Path $root "convert-dark.js"
 
-$files = Get-ChildItem -Path "$folder\*" -Include *.ppt,*.pptx -File
-Write-Host "Found $($files.Count) PPT files"
+New-Item -ItemType Directory -Path $pdfDir, $pptDir, $darkDir -Force | Out-Null
+
+$files = Get-ChildItem -Path $root -File |
+    Where-Object { $_.Extension -in ".ppt", ".pptx" }
 
 if ($files.Count -eq 0) {
-    Write-Host "No PPT files found!"
+    Write-Host "No PowerPoint files found."
     exit
 }
 
+Write-Host ""
+Write-Host "PPT -> PDF"
+Write-Host "----------"
+
 $office = New-Object -ComObject PowerPoint.Application
+$success = 0
+$failed = 0
+$total = $files.Count
+$count = 0
 
 foreach ($file in $files) {
+    $count++
     $outFile = Join-Path $pdfDir "$($file.BaseName).pdf"
-    Write-Host "Converting: $($file.Name)"
 
     try {
         $pres = $office.Presentations.Open($file.FullName)
         $pres.SaveAs($outFile, 32)
         $pres.Close()
+
         Move-Item -LiteralPath $file.FullName -Destination $pptDir -Force
-        Write-Host "  -> OK"
-    } catch {
-        Write-Host "  -> ERROR: $_"
+
+        $success++
+        Write-Host "[$count/$total] $($file.Name)  OK"
+    }
+    catch {
+        $failed++
+        Write-Host "[$count/$total] $($file.Name)  FAILED"
+
+        if ($pres) {
+            try {
+                $pres.Close()
+            }
+            catch {
+            }
+        }
     }
 }
 
 $office.Quit()
 [System.Runtime.InteropServices.Marshal]::ReleaseComObject($office) | Out-Null
 
-Write-Host "`n--- Dark Mode Conversion (Claude Warm) ---"
+Write-Host ""
+Write-Host "$success converted, $failed failed"
 
-$pdfs = Get-ChildItem -Path $pdfDir -Filter *.pdf -File
+$pdfs = Get-ChildItem -Path $pdfDir -Filter "*.pdf" -File
+
+if ($pdfs.Count -eq 0) {
+    Write-Host ""
+    Write-Host "No PDFs found."
+    exit
+}
+
+Write-Host ""
+Write-Host "Dark Mode"
+Write-Host "---------"
+
+$darkSuccess = 0
+$darkFailed = 0
+$total = $pdfs.Count
+$count = 0
+
 foreach ($pdf in $pdfs) {
+    $count++
     $darkFile = Join-Path $darkDir "$($pdf.BaseName)_dark.pdf"
-    Write-Host "Dark mode: $($pdf.Name)"
 
     try {
-        & node $convertScript $pdf.FullName $darkFile
-    } catch {
-        Write-Host "  -> ERROR: $_"
+        & node $convertScript $pdf.FullName $darkFile 2>$null | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Node exited with code $LASTEXITCODE"
+        }
+
+        $darkSuccess++
+        Write-Host "[$count/$total] $($pdf.Name)  OK"
+    }
+    catch {
+        $darkFailed++
+        Write-Host "[$count/$total] $($pdf.Name)  FAILED"
     }
 }
 
-Write-Host "`nDone. Dark PDFs saved to: $darkDir"
+Write-Host ""
+Write-Host "$darkSuccess converted, $darkFailed failed"
+
+Write-Host ""
+Write-Host "Output"
+Write-Host "------"
+Write-Host "PDF:      $pdfDir"
+Write-Host "Dark PDF: $darkDir"
+Write-Host "Original: $pptDir"
+
+Write-Host ""
+Write-Host "Done."
