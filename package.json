@@ -3,5 +3,8 @@
     "canvas": "^3.2.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^2.16.105"
+  },
+  "allowScripts": {
+    "canvas@3.2.3": true
   }
 }
