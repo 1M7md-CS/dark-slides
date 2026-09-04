@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$folder = "C:\Users\1M7md\Downloads\OneDrive_1_9-4-2026"
+$folder = $PSScriptRoot
 $pdfDir = Join-Path $folder "pdf"
 $pptDir = Join-Path $folder "ppt"
 $darkDir = Join-Path $folder "pdf-dark"
