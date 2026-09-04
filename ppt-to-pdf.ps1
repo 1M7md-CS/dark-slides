@@ -21,6 +21,8 @@ Write-Host "PPT -> PDF"
 Write-Host "----------"
 
 $office = New-Object -ComObject PowerPoint.Application
+$office.DisplayAlerts = 0
+
 $success = 0
 $failed = 0
 $total = $files.Count
@@ -29,11 +31,19 @@ $count = 0
 foreach ($file in $files) {
     $count++
     $outFile = Join-Path $pdfDir "$($file.BaseName).pdf"
+    $pres = $null
 
     try {
-        $pres = $office.Presentations.Open($file.FullName)
+        $pres = $office.Presentations.Open(
+            $file.FullName,
+            $false,
+            $false,
+            $false
+        )
+
         $pres.SaveAs($outFile, 32)
         $pres.Close()
+        $pres = $null
 
         Move-Item -LiteralPath $file.FullName -Destination $pptDir -Force
 
@@ -56,6 +66,8 @@ foreach ($file in $files) {
 
 $office.Quit()
 [System.Runtime.InteropServices.Marshal]::ReleaseComObject($office) | Out-Null
+[GC]::Collect()
+[GC]::WaitForPendingFinalizers()
 
 Write-Host ""
 Write-Host "$success converted, $failed failed"
@@ -82,7 +94,7 @@ foreach ($pdf in $pdfs) {
     $darkFile = Join-Path $darkDir "$($pdf.BaseName)_dark.pdf"
 
     try {
-        & node $convertScript $pdf.FullName $darkFile 2>$null | Out-Null
+        $null = & node $convertScript $pdf.FullName $darkFile 2>$null
 
         if ($LASTEXITCODE -ne 0) {
             throw "Node exited with code $LASTEXITCODE"
