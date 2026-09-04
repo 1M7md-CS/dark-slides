@@ -4,48 +4,98 @@ const { createCanvas } = require('canvas');
 const fs = require('fs');
 
 const theme = { r: 42, g: 37, b: 34 };
+const SCALE = 2;
 
 async function convertPdfToDark(inputPath, outputPath) {
     const data = new Uint8Array(fs.readFileSync(inputPath));
+
     const pdf = await pdfjsLib.getDocument({
         data,
         canvasFactory: {
-            create: (w, h) => createCanvas(w, h)
+            create: (width, height) => createCanvas(width, height)
         }
     }).promise;
+
     const newDoc = await PDFDocument.create();
     const totalPages = pdf.numPages;
 
     for (let i = 1; i <= totalPages; i++) {
-        process.stdout.write(`\r  Page ${i}/${totalPages}`);
         const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 2 });
-        const canvas = createCanvas(viewport.width, viewport.height);
-        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: SCALE });
 
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        const canvas = createCanvas(
+            Math.ceil(viewport.width),
+            Math.ceil(viewport.height)
+        );
 
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const d = imageData.data;
-        for (let j = 0; j < d.length; j += 4) {
-            const brightness = 0.299 * d[j] + 0.587 * d[j + 1] + 0.114 * d[j + 2];
-            const factor = 1 - (brightness / 255);
-            d[j] = theme.r + (255 - theme.r) * factor;
-            d[j + 1] = theme.g + (255 - theme.g) * factor;
-            d[j + 2] = theme.b + (255 - theme.b) * factor;
+        const ctx = canvas.getContext('2d', {
+            alpha: false
+        });
+
+        await page.render({
+            canvasContext: ctx,
+            viewport
+        }).promise;
+
+        const imageData = ctx.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+        const pixels = imageData.data;
+        const tr = theme.r;
+        const tg = theme.g;
+        const tb = theme.b;
+
+        for (let j = 0; j < pixels.length; j += 4) {
+            const r = pixels[j];
+            const g = pixels[j + 1];
+            const b = pixels[j + 2];
+
+            const brightness =
+                0.299 * r +
+                0.587 * g +
+                0.114 * b;
+
+            const factor = 1 - brightness / 255;
+
+            pixels[j] = tr + (255 - tr) * factor;
+            pixels[j + 1] = tg + (255 - tg) * factor;
+            pixels[j + 2] = tb + (255 - tb) * factor;
         }
+
         ctx.putImageData(imageData, 0, 0);
 
         const pngBytes = canvas.toBuffer('image/png');
-        const img = await newDoc.embedPng(pngBytes);
-        const newPage = newDoc.addPage([viewport.width, viewport.height]);
-        newPage.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+        const image = await newDoc.embedPng(pngBytes);
+
+        const newPage = newDoc.addPage([
+            viewport.width,
+            viewport.height
+        ]);
+
+        newPage.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: viewport.width,
+            height: viewport.height
+        });
+
+        page.cleanup();
     }
 
-    process.stdout.write('\n');
-    fs.writeFileSync(outputPath, await newDoc.save());
+    const pdfBytes = await newDoc.save();
+    fs.writeFileSync(outputPath, pdfBytes);
 }
 
 const [input, output] = process.argv.slice(2);
-if (!input || !output) { console.error('Usage: node convert-dark.js <input.pdf> <output.pdf>'); process.exit(1); }
-convertPdfToDark(input, output).then(() => console.log('  -> OK')).catch(e => { console.error('  -> ERROR:', e.message); process.exit(1); });
+
+if (!input || !output) {
+    process.exit(1);
+}
+
+convertPdfToDark(input, output).catch(() => {
+    process.exit(1);
+});
