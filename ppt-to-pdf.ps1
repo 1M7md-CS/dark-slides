@@ -1,4 +1,5 @@
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
 
 $root = $PSScriptRoot
 $pdfDir = Join-Path $root "pdf"
@@ -21,7 +22,7 @@ Write-Host "PPT -> PDF"
 Write-Host "----------"
 
 $office = New-Object -ComObject PowerPoint.Application
-$office.DisplayAlerts = 0
+$office.DisplayAlerts = 1
 
 $success = 0
 $failed = 0
@@ -90,14 +91,15 @@ $total = $pdfs.Count
 $count = 0
 
 foreach ($pdf in $pdfs) {
-    $count++
+$count++
     $darkFile = Join-Path $darkDir "$($pdf.BaseName)_dark.pdf"
+    $nodeOutput = $null
 
     try {
-        $null = & node $convertScript $pdf.FullName $darkFile 2>$null
+        $nodeOutput = & node $convertScript $pdf.FullName $darkFile 2>&1
 
         if ($LASTEXITCODE -ne 0) {
-            throw "Node exited with code $LASTEXITCODE"
+            throw "node exited with code $LASTEXITCODE"
         }
 
         $darkSuccess++
@@ -106,6 +108,10 @@ foreach ($pdf in $pdfs) {
     catch {
         $darkFailed++
         Write-Host "[$count/$total] $($pdf.Name)  FAILED"
+
+        if ($nodeOutput) {
+            $nodeOutput | ForEach-Object { Write-Host "    $_" }
+        }
     }
 }
 
@@ -118,6 +124,5 @@ Write-Host "------"
 Write-Host "PDF:      $pdfDir"
 Write-Host "Dark PDF: $darkDir"
 Write-Host "Original: $pptDir"
-
 Write-Host ""
 Write-Host "Done."
