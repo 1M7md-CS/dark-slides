@@ -18,11 +18,7 @@ npm install
 
 Place all `.ppt` and `.pptx` files in the project root, then run:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File ".\ppt-to-pdf.ps1"
-```
-
-Or with PowerShell 7:
+PowerShell 7:
 
 ```powershell
 pwsh -ExecutionPolicy Bypass -File ".\ppt-to-pdf.ps1"
