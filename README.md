@@ -5,8 +5,8 @@ Batch convert PowerPoint files (`.ppt`, `.pptx`) to PDF using Microsoft PowerPoi
 ## Requirements
 
 - Windows with Microsoft PowerPoint installed
-- PowerShell 5.1+ or PowerShell 7
-- Node.js (for dark mode conversion)
+- PowerShell 5.1+ or PowerShell 7 (`pwsh`)
+- [Node.js](https://nodejs.org/) (for dark mode conversion)
 
 ## Setup
 
@@ -30,11 +30,11 @@ pwsh -ExecutionPolicy Bypass -File ".\ppt-to-pdf.ps1"
 
 ## Output
 
-| Directory  | Contents                    |
-|------------|-----------------------------|
-| `pdf/`     | Converted PDFs              |
-| `pdf-dark/`| Dark-mode PDFs              |
-| `ppt/`     | Original PowerPoint files (moved) |
+| Directory   | Contents                              |
+|-------------|---------------------------------------|
+| `pdf/`      | Converted PDFs                        |
+| `pdf-dark/` | Dark-mode PDFs                        |
+| `ppt/`      | Original PowerPoint files (moved)     |
 
 ## How It Works
 
